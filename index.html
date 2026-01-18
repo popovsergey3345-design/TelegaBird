@@ -174,7 +174,9 @@
         <div class="p-4 border-t border-white/5 bg-slate-900/50">
             <div class="flex items-center gap-3">
                 <div class="relative">
+                    <!-- 👇👇👇 СЮДА ВСТАВЬ ССЫЛКУ НА СВОЁ ФОТО (В src="") 👇👇👇 -->
                     <img id="dev-photo" src="https://ui-avatars.com/api/?name=Serega&background=3b82f6&color=fff" alt="Dev" class="w-10 h-10 rounded-full border-2 border-blue-500/30 object-cover">
+                    <!-- 👆👆👆 СЮДА ВСТАВЬ ССЫЛКУ НА СВОЁ ФОТО (В src="") 👆👆👆 -->
                     <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-slate-900 rounded-full"></div>
                 </div>
                 <div class="flex flex-col">
@@ -252,15 +254,10 @@
         tg.expand();
         tg.headerColor = "#0f172a";
 
-        // Отображение имени и фото разработчика (если это сам владелец или для красоты)
+        // Отображение имени пользователя в шапке
         if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
             const user = tg.initDataUnsafe.user;
             document.getElementById('user-name').innerText = user.first_name;
-            
-            // Если нужно подставить фото из ТГ в блок разработчика (опционально)
-            if (user.photo_url) {
-                document.getElementById('dev-photo').src = user.photo_url;
-            }
         }
 
         const chatWindow = document.getElementById('chat-window');
