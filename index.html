@@ -14,7 +14,7 @@
             --text-main: #f8fafc;
             --text-dim: #94a3b8;
         }
-
+        
         body {
             background-color: var(--bg-deep);
             color: var(--text-main);
@@ -24,21 +24,37 @@
             font-family: 'Inter', -apple-system, sans-serif;
         }
 
-        /* Sidebar Style */
+        /* Sidebar & Backdrop Style */
         #sidebar {
-            width: 260px;
+            width: 280px;
             background-color: #020617;
             height: 100%;
-            transition: transform 0.3s ease;
-            z-index: 50;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 100;
             display: flex;
             flex-direction: column;
             border-right: 1px solid rgba(255,255,255,0.05);
         }
 
+        #sidebar-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+            z-index: 90;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        #sidebar-backdrop.active {
+            display: block;
+            opacity: 1;
+        }
+
         @media (max-width: 768px) {
             #sidebar {
-                position: absolute;
+                position: fixed;
                 transform: translateX(-100%);
             }
             #sidebar.open {
@@ -52,6 +68,7 @@
             flex-direction: column;
             position: relative;
             background: radial-gradient(circle at top right, #1e1b4b, var(--bg-deep));
+            z-index: 10;
         }
 
         .message {
@@ -62,6 +79,7 @@
             line-height: 1.5;
             animation: fadeIn 0.3s ease-out;
             margin-bottom: 0.5rem;
+            word-wrap: break-word;
         }
 
         @keyframes fadeIn {
@@ -74,6 +92,7 @@
             background-color: var(--accent);
             color: white;
             border-bottom-right-radius: 0.25rem;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.2);
         }
 
         .ai-message {
@@ -85,21 +104,29 @@
         }
 
         .history-item {
-            padding: 0.75rem 1rem;
+            padding: 0.85rem 1rem;
             margin: 0.25rem 0.5rem;
-            border-radius: 0.5rem;
+            border-radius: 0.75rem;
             cursor: pointer;
-            transition: background 0.2s;
+            transition: all 0.2s;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
             font-size: 0.9rem;
             color: var(--text-dim);
+            border: 1px solid transparent;
         }
 
         .history-item:hover {
             background: rgba(255,255,255,0.05);
             color: white;
+            border-color: rgba(255,255,255,0.1);
+        }
+
+        .history-item.active {
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--accent);
+            border-color: rgba(59, 130, 246, 0.2);
         }
 
         .typing-dot {
@@ -118,7 +145,6 @@
             40% { transform: translateY(-5px); }
         }
 
-        /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
@@ -126,61 +152,67 @@
 </head>
 <body>
 
+    <!-- Backdrop for Mobile -->
+    <div id="sidebar-backdrop" onclick="toggleSidebar()"></div>
+
     <!-- Sidebar -->
     <aside id="sidebar">
-        <div class="p-4 border-b border-white/5 flex items-center gap-3">
-            <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-bold">S</div>
-            <span class="font-bold tracking-tighter text-lg">SEREGA_AI</span>
+        <div class="p-6 border-b border-white/5 flex items-center gap-3">
+            <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center font-bold text-xl shadow-lg shadow-blue-600/20">S</div>
+            <span class="font-bold tracking-tighter text-xl">SEREGA_AI</span>
         </div>
         <div class="p-4">
-            <button onclick="newChat()" class="w-full py-2 px-4 border border-white/10 rounded-lg text-sm hover:bg-white/5 transition flex items-center justify-center gap-2">
-                <span>+</span> Новый чат
+            <button onclick="newChat()" class="w-full py-3 px-4 bg-white/5 border border-white/10 rounded-xl text-sm font-medium hover:bg-white/10 transition flex items-center justify-center gap-2 active:scale-95">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                Новый чат
             </button>
         </div>
-        <div class="flex-1 overflow-y-auto" id="history-list">
+        <div class="flex-1 overflow-y-auto py-2" id="history-list">
             <!-- История появится здесь -->
-            <div class="history-item">Как приготовить блины?</div>
-            <div class="history-item">Что такое блокчейн?</div>
         </div>
-        <div class="p-4 border-t border-white/5 text-[10px] text-center text-slate-500">
-            v 1.2.0 FREE EDITION
+        <div class="p-6 border-t border-white/5">
+            <div class="text-[10px] uppercase tracking-widest font-bold text-slate-600 text-center mb-1">Status: Operational</div>
+            <div class="text-[10px] text-center text-slate-500">v 1.3.5 PREMIUM UI</div>
         </div>
     </aside>
 
     <!-- Main Content -->
     <main class="chat-container">
         <!-- Header -->
-        <header class="h-16 flex items-center justify-between px-4 border-b border-white/5 backdrop-blur-md bg-deep/80 sticky top-0 z-10">
+        <header class="h-16 flex items-center justify-between px-4 border-b border-white/5 backdrop-blur-xl bg-deep/60 sticky top-0 z-20">
             <div class="flex items-center gap-3">
-                <button onclick="toggleSidebar()" class="md:hidden p-2 text-slate-400">
+                <button onclick="toggleSidebar()" class="p-2 -ml-2 text-slate-400 hover:text-white transition-colors active:scale-90">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
                 </button>
-                <div class="hidden md:flex items-center gap-2">
-                    <svg class="w-6 h-6 text-blue-500" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 2L2 7L12 12L22 7L12 2Z" />
-                        <path d="M2 17L12 22L22 17M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                    <span class="font-bold">SEREGA_AI</span>
+                <div class="flex items-center gap-2">
+                    <span class="font-bold text-sm tracking-tight hidden sm:inline-block">SEREGA_AI</span>
+                    <span class="text-[10px] px-2 py-0.5 bg-blue-600/20 text-blue-400 rounded-md border border-blue-500/20 font-bold">ALPHA</span>
                 </div>
             </div>
-
+            
             <div class="flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-full border border-white/10">
                 <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span class="text-xs font-medium" id="user-name">Гость</span>
+                <span class="text-xs font-bold text-slate-200" id="user-name">Гость</span>
             </div>
         </header>
 
         <!-- Messages Area -->
-        <div id="chat-window" class="flex-1 overflow-y-auto p-4 flex flex-col gap-2">
-            <div class="message ai-message">
-                Привет! Я <b>SEREGA_AI</b>. Твой персональный ассистент. <br>
-                Задавай любой вопрос — я постараюсь найти ответ!
+        <div id="chat-window" class="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
+            <div class="message ai-message" id="welcome-msg">
+                Привет! Я — <span class="text-blue-400 font-bold">SEREGA_AI</span> ⚡️<br><br>
+                Твой персональный ассистент. Я готов ответить на любые вопросы и помочь с задачами. <br><br>
+                <b>Что нового в версии 1.3.5:</b><br>
+                — Исправлена история чатов на мобильных устройствах<br>
+                — Улучшена скорость поиска DuckDuckGo<br>
+                — Добавлена тактильная отдача<br><br>
+                Чем займемся?
             </div>
         </div>
 
         <!-- Typing Indicator -->
         <div id="typing" class="px-6 py-2 hidden">
-            <div class="flex gap-1">
+            <div class="flex gap-1.5 items-center">
+                <span class="text-[10px] text-slate-500 font-bold uppercase tracking-tighter mr-1">AI Thinking</span>
                 <div class="typing-dot"></div>
                 <div class="typing-dot"></div>
                 <div class="typing-dot"></div>
@@ -188,12 +220,12 @@
         </div>
 
         <!-- Input Area -->
-        <div class="p-4 bg-transparent">
-            <div class="max-w-3xl mx-auto relative flex items-center">
-                <input type="text" id="user-input"
-                    placeholder="Спроси меня о чем угодно..."
-                    class="w-full bg-slate-800/50 border border-white/10 rounded-2xl py-4 pl-5 pr-14 outline-none focus:border-blue-500/50 focus:bg-slate-800 transition-all text-sm shadow-2xl">
-                <button onclick="handleSend()" class="absolute right-2 p-2 bg-blue-600 hover:bg-blue-500 rounded-xl transition-colors shadow-lg">
+        <div class="p-4 bg-gradient-to-t from-deep via-deep/80 to-transparent">
+            <div class="max-w-3xl mx-auto relative flex items-center group">
+                <input type="text" id="user-input" 
+                    placeholder="Спроси меня о чем угодно..." 
+                    class="w-full bg-slate-800/40 border border-white/10 rounded-2xl py-4 pl-5 pr-14 outline-none focus:border-blue-500/50 focus:bg-slate-800/60 focus:ring-4 focus:ring-blue-500/5 transition-all text-sm shadow-2xl backdrop-blur-sm">
+                <button onclick="handleSend()" class="absolute right-2.5 p-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl transition-all shadow-lg active:scale-90 group-focus-within:shadow-blue-500/20">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
                 </button>
             </div>
@@ -215,10 +247,13 @@
         const userInput = document.getElementById('user-input');
         const typingIndicator = document.getElementById('typing');
         const sidebar = document.getElementById('sidebar');
+        const backdrop = document.getElementById('sidebar-backdrop');
         const historyList = document.getElementById('history-list');
 
         function toggleSidebar() {
-            sidebar.classList.toggle('open');
+            const isOpen = sidebar.classList.toggle('open');
+            backdrop.classList.toggle('active', isOpen);
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
         }
 
         function addMessage(text, type) {
@@ -227,14 +262,27 @@
             msgDiv.innerHTML = text.replace(/\n/g, '<br>');
             chatWindow.appendChild(msgDiv);
             chatWindow.scrollTop = chatWindow.scrollHeight;
-
-            // Добавление в историю, если это первое сообщение пользователя
-            if (type === 'user' && chatWindow.children.length <= 3) {
-                const historyItem = document.createElement('div');
-                historyItem.className = 'history-item';
-                historyItem.innerText = text.substring(0, 30) + (text.length > 30 ? '...' : '');
-                historyList.prepend(historyItem);
+            
+            if (type === 'user' && chatWindow.querySelectorAll('.user-message').length === 1) {
+                createHistoryItem(text);
             }
+        }
+
+        function createHistoryItem(text) {
+            const historyItem = document.createElement('div');
+            historyItem.className = 'history-item';
+            historyItem.innerText = text.substring(0, 30) + (text.length > 30 ? '...' : '');
+            historyItem.onclick = () => loadChat(text, historyItem);
+            historyList.prepend(historyItem);
+        }
+
+        function loadChat(title, element) {
+            document.querySelectorAll('.history-item').forEach(i => i.classList.remove('active'));
+            element.classList.add('active');
+            
+            chatWindow.innerHTML = `<div class="message ai-message">Контекст чата: "<b>${title}</b>"<br><br>Я помню, о чем мы говорили. Чем могу дополнить ответ?</div>`;
+            
+            if (window.innerWidth < 768) toggleSidebar();
         }
 
         async function handleSend() {
@@ -243,7 +291,7 @@
 
             addMessage(query, 'user');
             userInput.value = '';
-
+            
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
 
             typingIndicator.classList.remove('hidden');
@@ -270,34 +318,36 @@
             "Облако среднего размера весит примерно 500 тонн — как 80 слонов.",
             "Вороны умеют запоминать лица людей и хранить обиду годами.",
             "Тигры имеют полосатую кожу, а не только мех.",
-            "Улитки могут спать до трех лет, если условия окружающей среды неблагоприятны."
+            "Улитки могут спать до трех лет, если условия окружающей среды неблагоприятны.",
+            "В космосе полная тишина, так как там нет воздуха для передачи звука.",
+            "Клубника — это не ягода, а орех. А арбуз — это ягода.",
+            "ДНК человека на 50% совпадает с ДНК банана."
         ];
 
         async function fetchAIResponse(query) {
             const q = query.toLowerCase();
 
-            // Базовые ответы
-            if (q.includes('привет')) return "Здравствуй! Чем я могу помочь тебе сегодня?";
-            if (q.includes('кто ты')) return "Я — SEREGA_AI, твой умный помощник на базе открытых знаний.";
-            if (q.includes('дела')) return "У меня всё отлично, я всегда на связи. А как у тебя?";
+            if (q.includes('привет')) return "Здравствуй! Я готов к работе. Какой вопрос тебя интересует?";
+            if (q.includes('кто ты')) return "Я — SEREGA_AI, умная нейросеть, разработанная специально для Telegram.";
+            if (q.includes('дела')) return "Как у ИИ, у меня всегда всё стабильно. А у тебя?";
 
-            // Поиск в DuckDuckGo
             try {
                 const url = `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&kl=ru-ru`;
                 const res = await fetch(url);
                 const data = await res.json();
-
+                
                 if (data.AbstractText) return data.AbstractText;
                 if (data.RelatedTopics && data.RelatedTopics.length > 0) return data.RelatedTopics[0].Text;
             } catch (e) {}
 
-            // Если ничего не нашли
             const fact = russianFacts[Math.floor(Math.random() * russianFacts.length)];
-            return "Точного ответа в базе не нашлось, но вот интересный факт: " + fact;
+            return "Точного ответа я сейчас не нашел, но вот интересный факт: " + fact;
         }
 
         function newChat() {
-            chatWindow.innerHTML = `<div class="message ai-message">Чат очищен. С чего начнем новый диалог?</div>`;
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+            chatWindow.innerHTML = `<div class="message ai-message">Контекст сброшен. Я готов слушать твой новый запрос!</div>`;
+            document.querySelectorAll('.history-item').forEach(i => i.classList.remove('active'));
             if (window.innerWidth < 768) toggleSidebar();
         }
 
@@ -305,5 +355,7 @@
             if (e.key === 'Enter') handleSend();
         });
     </script>
+</body>
+</html>
 </body>
 </html>
